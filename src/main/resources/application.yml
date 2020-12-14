@@ -1,0 +1,7 @@
+salus:
+  environment: local
+spring:
+  kafka:
+    consumer:
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      group-id: ${spring.application.name}-${salus.environment}
