@@ -22,6 +22,13 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
+/**
+ * Allows for locating partitions of requested topics in order to allow kafka consumers
+ * in the same group to process all messages in a broadcast-way.
+ * Refer to
+ * <a href="https://docs.spring.io/spring-kafka/reference/html/#tip-assign-all-parts">this section</a>
+ * for more details.
+ */
 @Component
 public class PartitionFinder {
 

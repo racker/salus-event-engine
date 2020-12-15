@@ -16,81 +16,33 @@
 
 package com.rackspace.salus.eventengine.services;
 
-import com.rackspace.salus.common.messaging.KafkaTopicProperties;
-import com.rackspace.salus.eventengine.config.AppProperties;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
-import com.rackspace.salus.telemetry.messaging.TaskChangeEvent;
 import com.rackspace.salus.telemetry.repositories.EventEngineTaskRepository;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
-import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.annotation.TopicPartition;
-import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
-import org.springframework.kafka.support.serializer.JsonDeserializer;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
 public class EventTaskLoader {
 
-  private final ThreadPoolTaskExecutor executor;
   private final EventEngineTaskRepository taskRepository;
-  private final KafkaTopicProperties kafkaTopicProperties;
-  private final AppProperties appProperties;
-  private final EventContextResolver eventContextResolver;
 
   @Autowired
-  public EventTaskLoader(ThreadPoolTaskExecutor executor,
-                         EventEngineTaskRepository taskRepository,
-                         KafkaTopicProperties kafkaTopicProperties,
-                         AppProperties appProperties,
-                         EventContextResolver eventContextResolver) {
-    this.executor = executor;
+  public EventTaskLoader(EventEngineTaskRepository taskRepository) {
     this.taskRepository = taskRepository;
-    this.kafkaTopicProperties = kafkaTopicProperties;
-    this.appProperties = appProperties;
-    this.eventContextResolver = eventContextResolver;
   }
 
-  public String getTopic() {
-    return kafkaTopicProperties.getTaskChanges();
-  }
-
-  @KafkaListener(topicPartitions = @TopicPartition(
-      topic = "#{__listener.topic}",
-      partitions = "#{@partitionFinder.partitions(__listener.topic)}"
-  ),
-    properties = {
-        ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS + "=" +
-            "org.springframework.kafka.support.serializer.JsonDeserializer"
-    }
-  )
-  public void handleChangeEvent(TaskChangeEvent event) {
-    taskRepository.findById(event.getTaskId())
-        .ifPresentOrElse(
-            eventContextResolver::updateTask,
-            () -> eventContextResolver.unregisterTask(event.getTaskId())
-        );
-  }
-
-  @PostConstruct
-  public void init() {
-    executor.execute(this::loadTasks,
-        appProperties.getTaskLoadingInitialDelay().toMillis());
-  }
-
-  void loadTasks() {
-    log.debug("Loading tasks");
-
+  @Transactional(readOnly = true)
+  public void loadAll(Consumer<EventEngineTask> handler) {
     final Instant startTime = Instant.now();
     try (Stream<EventEngineTask> taskStream = taskRepository.streamAll()) {
-      taskStream
-          .forEach(eventContextResolver::registerTask);
+      taskStream.forEach(handler);
     }
 
     log.info("Loaded tasks in duration={}", Duration.between(startTime, Instant.now()));

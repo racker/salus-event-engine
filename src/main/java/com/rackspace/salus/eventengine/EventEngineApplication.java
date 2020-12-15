@@ -21,10 +21,11 @@ import com.rackspace.salus.telemetry.EnableSalusJpa;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableSalusKafkaMessaging
-@EnableAsync
+@EnableScheduling
 public class EventEngineApplication {
   public static void main(String[] args) {
     SpringApplication.run(EventEngineApplication.class, args);

@@ -29,6 +29,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.stereotype.Service;
 
@@ -38,12 +39,15 @@ public class UniversalMetricConsumer {
 
   private final String topic;
   private final EventContextResolver eventContextResolver;
+  private final KafkaListenerEndpointRegistry kafkaListenerEndpointRegistry;
 
   @Autowired
   public UniversalMetricConsumer(
-      KafkaTopicProperties topicProperties, EventContextResolver eventContextResolver) {
+      KafkaTopicProperties topicProperties, EventContextResolver eventContextResolver,
+      KafkaListenerEndpointRegistry kafkaListenerEndpointRegistry) {
     this.topic = topicProperties.getMetrics();
     this.eventContextResolver = eventContextResolver;
+    this.kafkaListenerEndpointRegistry = kafkaListenerEndpointRegistry;
   }
 
   /**
@@ -62,6 +66,8 @@ public class UniversalMetricConsumer {
    * @param metricFrame The UniversalMetricFrame read from Kafka.
    */
   @KafkaListener(
+      // Will be started by EventTaskListener after tasks are loaded
+      autoStartup = "false",
       topics = "#{__listener.topic}",
       properties = {
           ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS + "="
