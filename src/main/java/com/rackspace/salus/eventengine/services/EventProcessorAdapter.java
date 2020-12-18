@@ -49,7 +49,7 @@ public class EventProcessorAdapter {
             groupedMetric.getMetrics()
         ),
         (transition, message) -> eventNotificationProducer.handleStateChange(
-            context, groupingLabels, groupedMetric, transition, message)
+            context.getTask(), groupingLabels, groupedMetric, transition, message)
     );
   }
 }

@@ -17,10 +17,10 @@
 package com.rackspace.salus.eventengine.services;
 
 import com.rackspace.salus.common.messaging.KafkaTopicProperties;
-import com.rackspace.salus.event.processor.EventProcessorContext;
 import com.rackspace.salus.event.statemachines.MultiStateTransition;
 import com.rackspace.salus.eventengine.config.AppProperties;
 import com.rackspace.salus.eventengine.model.GroupedMetric;
+import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
 import com.rackspace.salus.telemetry.messaging.EventNotification;
 import com.rackspace.salus.telemetry.messaging.EventNotification.Observation;
@@ -65,14 +65,13 @@ public class EventNotificationProducer {
     return seconds - (seconds % appProperties.getNotificationTimestampRounding().getSeconds());
   }
 
-  public void handleStateChange(EventProcessorContext context,
-                                List<Entry<String, String>> groupingLabels,
+  public void handleStateChange(EventEngineTask task, List<Entry<String, String>> groupingLabels,
                                 GroupedMetric groupedMetric,
                                 MultiStateTransition<TaskState, String> transition,
                                 String message) {
     final Instant timestamp = groupedMetric.getTimestamp();
-    final String tenantId = context.getTask().getTenantId();
-    final String taskId = context.getTask().getId().toString();
+    final String tenantId = task.getTenantId();
+    final String taskId = task.getId().toString();
 
     final StringBuilder id = new StringBuilder(tenantId);
     if (!groupingLabels.isEmpty()) {
