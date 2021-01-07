@@ -25,14 +25,13 @@ import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Data;
@@ -45,7 +44,14 @@ import org.springframework.util.StringUtils;
 @Slf4j
 public class EventContextResolver {
 
-  private final ConcurrentHashMap<TasksKey, Set<EventEngineTask>> tasks = new ConcurrentHashMap<>();
+  /**
+   * Tracks the registered {@link EventEngineTask}s by grouping into first-level keys
+   * defined by {@link TasksKey}. Each entry of this map is a {@link java.util.NavigableMap} subtype
+   * in order to optimize for the iteration performed in {@link #process(GroupedMetric)}.
+   * The values are more specifically {@link ConcurrentNavigableMap} to ensure concurrency safety
+   * throughout the tracking types in this class.
+   */
+  private final ConcurrentHashMap<TasksKey, ConcurrentNavigableMap<UUID, EventEngineTask>> tasks = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<UUID, TasksKey> taskKeysById = new ConcurrentHashMap<>();
 
   private final ConcurrentHashMap<ContextKey, EventProcessorContext> contexts = new ConcurrentHashMap<>();
@@ -72,9 +78,9 @@ public class EventContextResolver {
    * For unit testing
    */
   boolean hasTask(EventEngineTask task) {
-    final Set<EventEngineTask> tasksEntry = tasks
+    final ConcurrentNavigableMap<UUID, EventEngineTask> tasksEntry = tasks
         .get(new TasksKey(task.getTenantId(), task.getTaskParameters().getMetricGroup()));
-    return tasksEntry != null && tasksEntry.contains(task);
+    return tasksEntry != null && tasksEntry.containsKey(task.getId());
   }
 
   /**
@@ -107,8 +113,8 @@ public class EventContextResolver {
     final TasksKey key = new TasksKey(
         task.getTenantId(), task.getTaskParameters().getMetricGroup());
 
-    tasks.computeIfAbsent(key, unused -> new CopyOnWriteArraySet<>())
-        .add(task);
+    tasks.computeIfAbsent(key, unused -> new ConcurrentSkipListMap<>())
+        .put(task.getId(), task);
 
     taskKeysById.put(task.getId(), key);
   }
@@ -118,12 +124,12 @@ public class EventContextResolver {
     final TasksKey key = new TasksKey(
         task.getTenantId(), task.getTaskParameters().getMetricGroup());
 
-    final Set<EventEngineTask> tasks = this.tasks.get(key);
+    final ConcurrentNavigableMap<UUID, EventEngineTask> tasks = this.tasks.get(key);
     if (tasks == null) {
       throw new IllegalArgumentException("Cannot update task that is not registered");
     } else {
-      // replaces task due to being a set
-      tasks.add(task);
+      // simply swap out the entry
+      tasks.put(task.getId(), task);
     }
   }
 
@@ -133,11 +139,13 @@ public class EventContextResolver {
     final TasksKey tasksKey = taskKeysById.remove(taskId);
 
     if (tasksKey != null) {
-      final Set<EventEngineTask> entry = tasks.get(tasksKey);
+      final ConcurrentNavigableMap<UUID, EventEngineTask> entry = tasks.get(tasksKey);
       if (entry != null) {
-        entry.removeIf(task -> task.getId().equals(taskId));
-        if (entry.isEmpty()) {
-          tasks.remove(tasksKey);
+        if (entry.remove(taskId) != null) {
+          // and if the whole entry-map is empty, then remove it to shave off some memory usage
+          if (entry.isEmpty()) {
+            tasks.remove(tasksKey);
+          }
         }
       }
     }
@@ -154,11 +162,11 @@ public class EventContextResolver {
    */
   public void process(GroupedMetric metric) {
     // First lookup by general task key
-    final Set<EventEngineTask> candidateTasks = tasks
+    final ConcurrentNavigableMap<UUID, EventEngineTask> candidateTasks = tasks
         .get(new TasksKey(metric.getTenantId(), metric.getMetricGroup()));
 
     if (candidateTasks != null) {
-      candidateTasks.stream()
+      candidateTasks.values().stream()
           // ...then narrow down by label selectors
           .filter(task -> matchesLabelSelector(task.getTaskParameters(), metric.getLabels()))
           .forEach(task -> {
@@ -190,7 +198,7 @@ public class EventContextResolver {
 
   private List<Entry<String, String>> buildGroupingLabels(GroupedMetric metric, EventEngineTask task) {
     // Determine grouping label key-values from concatenation of ...
-    final List<Entry<String, String>> groupingLabels = Stream.concat(
+    return Stream.concat(
         // ...the label selectors
         emptyMapIfNull(
             task.getTaskParameters().getLabelSelector()).entrySet().stream()
@@ -201,7 +209,6 @@ public class EventContextResolver {
             .map(s -> Map.entry(s, metric.getLabels().get(s)))
     )
         .collect(Collectors.toList());
-    return groupingLabels;
   }
 
   private String resolveZone(GroupedMetric metric, EventEngineTask task) {
