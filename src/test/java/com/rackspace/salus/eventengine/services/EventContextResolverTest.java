@@ -29,7 +29,6 @@ import com.rackspace.salus.eventengine.config.AppProperties;
 import com.rackspace.salus.eventengine.model.GroupedMetric;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters;
-import com.rackspace.salus.telemetry.entities.subtype.SalusEventEngineTask;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import java.util.List;
@@ -64,7 +63,7 @@ public class EventContextResolverTest {
         eventProcessorAdapter, appProperties
     );
 
-    final EventEngineTask task = new SalusEventEngineTask()
+    final EventEngineTask task = new EventEngineTask()
         .setId(UUID.randomUUID())
         .setTenantId(tenantId)
         .setTaskParameters(new EventEngineTaskParameters()
@@ -123,7 +122,7 @@ public class EventContextResolverTest {
         eventProcessorAdapter, appProperties
     );
 
-    final EventEngineTask task = new SalusEventEngineTask()
+    final EventEngineTask task = new EventEngineTask()
         .setId(UUID.randomUUID())
         .setTenantId(tenantId)
         .setTaskParameters(new EventEngineTaskParameters()
@@ -162,7 +161,7 @@ public class EventContextResolverTest {
         eventProcessorAdapter, appProperties
     );
 
-    final EventEngineTask task = new SalusEventEngineTask()
+    final EventEngineTask task = new EventEngineTask()
         .setId(UUID.randomUUID())
         .setTenantId(tenantId)
         .setTaskParameters(new EventEngineTaskParameters()
@@ -197,7 +196,7 @@ public class EventContextResolverTest {
         eventProcessorAdapter, appProperties
     );
 
-    final EventEngineTask task = new SalusEventEngineTask()
+    final EventEngineTask task = new EventEngineTask()
         .setId(UUID.randomUUID())
         .setTenantId(tenantId)
         .setTaskParameters(new EventEngineTaskParameters()
@@ -244,7 +243,7 @@ public class EventContextResolverTest {
         eventProcessorAdapter, appProperties
     );
 
-    final EventEngineTask task = new SalusEventEngineTask()
+    final EventEngineTask task = new EventEngineTask()
         .setId(UUID.randomUUID())
         .setTenantId(tenantId)
         .setTaskParameters(new EventEngineTaskParameters()
@@ -289,7 +288,7 @@ public class EventContextResolverTest {
         eventProcessorAdapter, appProperties
     );
 
-    final EventEngineTask task = new SalusEventEngineTask()
+    final EventEngineTask task = new EventEngineTask()
         .setId(UUID.randomUUID())
         .setTenantId(tenantId)
         .setTaskParameters(new EventEngineTaskParameters()
@@ -358,7 +357,7 @@ public class EventContextResolverTest {
         eventProcessorAdapter, appProperties
     );
 
-    final EventEngineTask task = new SalusEventEngineTask()
+    final EventEngineTask task = new EventEngineTask()
         .setId(UUID.randomUUID())
         .setTenantId(tenantId)
         .setTaskParameters(new EventEngineTaskParameters()
@@ -422,7 +421,7 @@ public class EventContextResolverTest {
         eventProcessorAdapter, appProperties
     );
 
-    final EventEngineTask task1 = new SalusEventEngineTask()
+    final EventEngineTask task1 = new EventEngineTask()
         .setId(UUID.randomUUID())
         .setTenantId(tenantId)
         .setTaskParameters(new EventEngineTaskParameters()
@@ -430,7 +429,7 @@ public class EventContextResolverTest {
         );
     resolver.registerTask(task1);
 
-    final EventEngineTask task2 = new SalusEventEngineTask()
+    final EventEngineTask task2 = new EventEngineTask()
         .setId(UUID.randomUUID())
         .setTenantId(tenantId)
         .setTaskParameters(new EventEngineTaskParameters()
@@ -467,13 +466,12 @@ public class EventContextResolverTest {
   public void testProcess_missingZoneInMetric() {
     final String tenantId = randomAlphanumeric(10);
     final String metricGroup = randomAlphanumeric(10);
-    final String resourceId = randomAlphanumeric(10);
 
     final EventContextResolver resolver = new EventContextResolver(meterRegistry,
         eventProcessorAdapter, appProperties
     );
 
-    final EventEngineTask task = new SalusEventEngineTask()
+    final EventEngineTask task = new EventEngineTask()
         .setId(UUID.randomUUID())
         .setTenantId(tenantId)
         .setTaskParameters(new EventEngineTaskParameters()
@@ -516,7 +514,7 @@ public class EventContextResolverTest {
         eventProcessorAdapter, appProperties
     );
 
-    final EventEngineTask task = new SalusEventEngineTask()
+    final EventEngineTask task = new EventEngineTask()
         .setId(UUID.randomUUID())
         .setTenantId(tenantId)
         .setTaskParameters(new EventEngineTaskParameters()

@@ -20,17 +20,13 @@ import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.mockito.Mockito.verify;
 
 import com.rackspace.salus.common.messaging.KafkaTopicProperties;
-import com.rackspace.salus.event.processor.EventProcessorContext;
-import com.rackspace.salus.event.statemachines.LatchingStateHolder;
 import com.rackspace.salus.event.statemachines.MultiStateTransition;
 import com.rackspace.salus.event.statemachines.MultiStateTransition.Observation;
-import com.rackspace.salus.event.statemachines.QuorumStateMachine;
 import com.rackspace.salus.event.statemachines.StateTransition;
 import com.rackspace.salus.eventengine.config.AppProperties;
 import com.rackspace.salus.eventengine.model.GroupedMetric;
 import com.rackspace.salus.telemetry.entities.EventEngineTask;
 import com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState;
-import com.rackspace.salus.telemetry.entities.subtype.SalusEventEngineTask;
 import com.rackspace.salus.telemetry.messaging.EventNotification;
 import java.time.Duration;
 import java.time.Instant;
@@ -40,7 +36,6 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -83,7 +78,7 @@ public class EventNotificationProducerTest {
     final Instant timestamp = Instant.parse("2020-12-18T20:11:42Z");
     final Instant timestampRounded = Instant.parse("2020-12-18T20:10:00Z");
 
-    EventEngineTask task = new SalusEventEngineTask()
+    EventEngineTask task = new EventEngineTask()
         .setId(UUID.randomUUID())
         .setTenantId(tenantId);
 
