@@ -21,3 +21,4 @@ spring:
 salus:
   event-engine:
     task-loading-initial-delay: 10s
+    metrics-topic: umf.json

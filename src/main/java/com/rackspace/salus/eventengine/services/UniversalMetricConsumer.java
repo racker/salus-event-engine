@@ -20,6 +20,7 @@ import com.google.protobuf.Timestamp;
 import com.rackspace.monplat.protocol.Metric;
 import com.rackspace.monplat.protocol.UniversalMetricFrame;
 import com.rackspace.salus.common.messaging.KafkaTopicProperties;
+import com.rackspace.salus.eventengine.config.AppProperties;
 import com.rackspace.salus.eventengine.model.GroupedMetric;
 import java.time.Instant;
 import java.util.List;
@@ -37,17 +38,15 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class UniversalMetricConsumer {
 
-  private final String topic;
   private final EventContextResolver eventContextResolver;
-  private final KafkaListenerEndpointRegistry kafkaListenerEndpointRegistry;
+  private final AppProperties appProperties;
 
   @Autowired
   public UniversalMetricConsumer(
-      KafkaTopicProperties topicProperties, EventContextResolver eventContextResolver,
-      KafkaListenerEndpointRegistry kafkaListenerEndpointRegistry) {
-    this.topic = topicProperties.getMetrics();
+      EventContextResolver eventContextResolver,
+      AppProperties appProperties) {
     this.eventContextResolver = eventContextResolver;
-    this.kafkaListenerEndpointRegistry = kafkaListenerEndpointRegistry;
+    this.appProperties = appProperties;
   }
 
   /**
@@ -56,7 +55,7 @@ public class UniversalMetricConsumer {
    * @return The topic to consume
    */
   public String getTopic() {
-    return this.topic;
+    return appProperties.getMetricsTopic();
   }
 
   /**

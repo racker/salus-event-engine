@@ -44,6 +44,9 @@ public class AppProperties {
 
   Duration taskLoadingInitialDelay = Duration.ofMinutes(1);
 
+  @NotBlank
+  String metricsTopic;
+
   /**
    * The notification ID includes a timestamp that is rounded down to this duration to eanble
    * time-window correlation.
