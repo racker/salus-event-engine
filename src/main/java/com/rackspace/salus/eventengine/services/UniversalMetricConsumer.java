@@ -19,24 +19,28 @@ package com.rackspace.salus.eventengine.services;
 import com.google.protobuf.Timestamp;
 import com.rackspace.monplat.protocol.Metric;
 import com.rackspace.monplat.protocol.UniversalMetricFrame;
-import com.rackspace.salus.common.messaging.KafkaTopicProperties;
 import com.rackspace.salus.eventengine.config.AppProperties;
 import com.rackspace.salus.eventengine.model.GroupedMetric;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
 public class UniversalMetricConsumer {
+
+  private static final String SYSTEM_LABEL_PREFIX = "system_";
+  private static final String RESOURCE_LABEL_PREFIX = "resource_";
+  private static final String RESOURCE_NAME_LABEL = "resource_name";
 
   private final EventContextResolver eventContextResolver;
   private final AppProperties appProperties;
@@ -105,7 +109,7 @@ public class UniversalMetricConsumer {
                     )
                 )
                 .setMetricGroup(groupedEntry.getKey().getMetricGroup())
-                .setLabels(groupedEntry.getKey().getMetricTags())
+                .setLabels(convertLabelsFromMetricFrame(metricFrame, groupedEntry.getKey().getMetricTags()))
                 // metric name-value entries
                 .setMetrics(
                     groupedEntry.getValue().stream()
@@ -137,8 +141,25 @@ public class UniversalMetricConsumer {
         .forEach(eventContextResolver::process);
   }
 
-  private Instant convertTimestamp(Timestamp timestamp) {
-    return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
+  private Map<String, String> convertLabelsFromMetricFrame(
+      UniversalMetricFrame metricFrame,
+      Map<String, String> metricTags) {
+
+    final HashMap<String, String> labels = new HashMap<>(metricTags);
+    labels.putAll(prefixKeys(metricFrame.getSystemMetadataMap(), SYSTEM_LABEL_PREFIX));
+    labels.putAll(prefixKeys(metricFrame.getDeviceMetadataMap(), RESOURCE_LABEL_PREFIX));
+    if (!metricFrame.getDeviceName().isBlank()) {
+      labels.put(RESOURCE_NAME_LABEL, metricFrame.getDeviceName());
+    }
+    return labels;
+  }
+
+  private Map<String, String> prefixKeys(Map<String, String> input, String prefix) {
+    return input.entrySet().stream()
+        .collect(Collectors.toMap(
+            entry -> prefix+entry.getKey(),
+            Map.Entry::getValue
+        ));
   }
 
   @Data
