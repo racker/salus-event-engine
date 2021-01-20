@@ -32,11 +32,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class EventNotificationProducer {
 
   private static final String ID_DELIM = ":";
@@ -69,6 +71,18 @@ public class EventNotificationProducer {
                                 GroupedMetric groupedMetric,
                                 MultiStateTransition<TaskState, String> transition,
                                 String message) {
+    log.trace("Handling state change for task={} due to metric={} where transition={}",
+        task, groupedMetric, transition);
+
+    if (transition.getOverall().getFrom() == null &&
+      transition.getOverall().getTo() == TaskState.OK &&
+      !appProperties.isNotifyOnInitialOk()) {
+      log.trace("Ignoring initial transition to OK for task={} due to metric={}",
+          task, groupedMetric
+      );
+      return;
+    }
+
     final Instant timestamp = groupedMetric.getTimestamp();
     final String tenantId = task.getTenantId();
     final String taskId = task.getId().toString();
@@ -91,7 +105,8 @@ public class EventNotificationProducer {
         .setTimestamp(timestamp)
         .setTaskId(taskId)
         .setState(transition.getOverall().getTo().toString())
-        .setPreviousState(transition.getOverall().getFrom().toString())
+        .setPreviousState(transition.getOverall().getFrom() != null ?
+            transition.getOverall().getFrom().toString() : null)
         .setObservations(convertObservations(transition.getObservations()))
         .setMessage(message)
         .setMetricGroup(groupedMetric.getMetricGroup())

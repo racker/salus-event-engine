@@ -57,4 +57,10 @@ public class AppProperties {
    * time-window correlation.
    */
   Duration notificationTimestampRounding = Duration.ofMinutes(5);
+
+  /**
+   * When true, notifications will be produced even when a task-context first evaluates
+   * to {@link com.rackspace.salus.telemetry.entities.EventEngineTaskParameters.TaskState#OK}.
+   */
+  boolean notifyOnInitialOk = false;
 }
