@@ -108,28 +108,19 @@ public class EventContextResolver {
     return contexts.size();
   }
 
-  public void registerTask(EventEngineTask task) {
-    log.debug("Registering task={}", task);
+  public void registerOrUpdateTask(EventEngineTask task) {
+    log.debug("Registering/updating task={}", task);
     final TasksKey key = new TasksKey(
         task.getTenantId(), task.getTaskParameters().getMetricGroup());
 
-    tasks.computeIfAbsent(key, unused -> new ConcurrentSkipListMap<>())
+    final EventEngineTask previousEntry = tasks.computeIfAbsent(key, unused -> new ConcurrentSkipListMap<>())
         .put(task.getId(), task);
-
-    taskKeysById.put(task.getId(), key);
-  }
-
-  public void updateTask(EventEngineTask task) {
-    log.debug("Updating task={}", task);
-    final TasksKey key = new TasksKey(
-        task.getTenantId(), task.getTaskParameters().getMetricGroup());
-
-    final ConcurrentNavigableMap<UUID, EventEngineTask> tasks = this.tasks.get(key);
-    if (tasks == null) {
-      throw new IllegalArgumentException("Cannot update task that is not registered");
-    } else {
-      // simply swap out the entry
-      tasks.put(task.getId(), task);
+    if (previousEntry == null) {
+      log.debug("Registered task for {}", task);
+      taskKeysById.put(task.getId(), key);
+    }
+    else {
+      log.debug("Updated registration of task for {}", task);
     }
   }
 
@@ -161,11 +152,15 @@ public class EventContextResolver {
    * process the metric through the associated context's state machine.
    */
   public void process(GroupedMetric metric) {
+    log.trace("Processing metric={}", metric);
+
     // First lookup by general task key
     final ConcurrentNavigableMap<UUID, EventEngineTask> candidateTasks = tasks
         .get(new TasksKey(metric.getTenantId(), metric.getMetricGroup()));
 
     if (candidateTasks != null) {
+      log.trace("Found count={} candidate tasks matching metric={}",
+          candidateTasks.size(), metric);
       candidateTasks.values().stream()
           // ...then narrow down by label selectors
           .filter(task -> matchesLabelSelector(task.getTaskParameters(), metric.getLabels()))

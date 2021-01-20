@@ -92,7 +92,7 @@ public class EventTaskListener {
   public void handleChangeEvent(TaskChangeEvent event) {
     taskRepository.findById(event.getTaskId())
         .ifPresentOrElse(
-            eventContextResolver::updateTask,
+            eventContextResolver::registerOrUpdateTask,
             () -> eventContextResolver.unregisterTask(event.getTaskId())
         );
   }
@@ -108,7 +108,7 @@ public class EventTaskListener {
 
   void loadTasks() {
     log.debug("Loading tasks");
-    eventTaskLoader.loadAll(eventContextResolver::registerTask);
+    eventTaskLoader.loadAll(eventContextResolver::registerOrUpdateTask);
 
     log.debug("Starting Kafka listeners");
     kafkaListenerEndpointRegistry.getAllListenerContainers()

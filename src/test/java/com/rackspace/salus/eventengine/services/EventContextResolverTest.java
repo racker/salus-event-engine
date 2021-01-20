@@ -54,7 +54,7 @@ public class EventContextResolverTest {
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Test
-  public void testRegisterAndUnregisterTask() {
+  public void testRegisterAndUnregisterOrUpdateTask() {
     final String tenantId = randomAlphanumeric(10);
     final String metricGroup = randomAlphanumeric(10);
     final String resourceId = randomAlphanumeric(10);
@@ -71,7 +71,7 @@ public class EventContextResolverTest {
             .setLabelSelector(Map.of("resource_id", resourceId))
         );
 
-    resolver.registerTask(task);
+    resolver.registerOrUpdateTask(task);
 
     assertThat(resolver.getTaskTrackingCount()).isEqualTo(1);
     assertThat(resolver.getContextCount()).isEqualTo(0);
@@ -129,7 +129,7 @@ public class EventContextResolverTest {
             .setMetricGroup(metricGroup)
         );
 
-    resolver.registerTask(task);
+    resolver.registerOrUpdateTask(task);
 
     final GroupedMetric metric = new GroupedMetric()
         .setTenantId(tenantId)
@@ -168,7 +168,7 @@ public class EventContextResolverTest {
             .setMetricGroup(metricGroup)
         );
 
-    resolver.registerTask(task);
+    resolver.registerOrUpdateTask(task);
 
     resolver.process(new GroupedMetric()
         .setTenantId("not" + tenantId)
@@ -207,7 +207,7 @@ public class EventContextResolverTest {
             ))
         );
 
-    resolver.registerTask(task);
+    resolver.registerOrUpdateTask(task);
 
     final GroupedMetric metric = new GroupedMetric()
         .setTenantId(tenantId)
@@ -254,7 +254,7 @@ public class EventContextResolverTest {
             ))
         );
 
-    resolver.registerTask(task);
+    resolver.registerOrUpdateTask(task);
 
     // missing monitor_id
     resolver.process(new GroupedMetric()
@@ -296,7 +296,7 @@ public class EventContextResolverTest {
             .setGroupBy(List.of("monitor_id", "resource_id"))
         );
 
-    resolver.registerTask(task);
+    resolver.registerOrUpdateTask(task);
 
     final GroupedMetric metric1 = new GroupedMetric()
         .setTenantId(tenantId)
@@ -366,7 +366,7 @@ public class EventContextResolverTest {
             .setGroupBy(List.of("resource_id"))
         );
 
-    resolver.registerTask(task);
+    resolver.registerOrUpdateTask(task);
 
     final GroupedMetric metric1 = new GroupedMetric()
         .setTenantId(tenantId)
@@ -427,7 +427,7 @@ public class EventContextResolverTest {
         .setTaskParameters(new EventEngineTaskParameters()
             .setMetricGroup(metricGroup)
         );
-    resolver.registerTask(task1);
+    resolver.registerOrUpdateTask(task1);
 
     final EventEngineTask task2 = new EventEngineTask()
         .setId(UUID.randomUUID())
@@ -435,7 +435,7 @@ public class EventContextResolverTest {
         .setTaskParameters(new EventEngineTaskParameters()
             .setMetricGroup(metricGroup)
         );
-    resolver.registerTask(task2);
+    resolver.registerOrUpdateTask(task2);
 
     final GroupedMetric metric = new GroupedMetric()
         .setTenantId(tenantId)
@@ -480,7 +480,7 @@ public class EventContextResolverTest {
             .setZoneLabel("monitoring_zone_id")
         );
 
-    resolver.registerTask(task);
+    resolver.registerOrUpdateTask(task);
 
     final GroupedMetric metric = new GroupedMetric()
         .setTenantId(tenantId)
@@ -523,7 +523,7 @@ public class EventContextResolverTest {
             .setZoneLabel("monitoring_zone_id")
         );
 
-    resolver.registerTask(task);
+    resolver.registerOrUpdateTask(task);
 
     final GroupedMetric metric = new GroupedMetric()
         .setTenantId(tenantId)
