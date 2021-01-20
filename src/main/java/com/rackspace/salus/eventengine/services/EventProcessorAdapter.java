@@ -22,10 +22,12 @@ import com.rackspace.salus.event.processor.EventProcessorInput;
 import com.rackspace.salus.eventengine.model.GroupedMetric;
 import java.util.List;
 import java.util.Map.Entry;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class EventProcessorAdapter {
 
   private final EventProcessor eventProcessor;
@@ -41,6 +43,9 @@ public class EventProcessorAdapter {
   public void process(EventProcessorContext context,
                       List<Entry<String, String>> groupingLabels,
                       String zone, GroupedMetric groupedMetric) {
+    log.trace("Processing metric={} in context={} via event processor",
+        groupedMetric, context);
+
     eventProcessor.process(
         context,
         new EventProcessorInput(
