@@ -30,6 +30,11 @@ import org.springframework.validation.annotation.Validated;
 public class AppProperties {
 
   /**
+   * Differentiates the instances running in each of the dev/staging/prod clusters.
+   */
+  String environment = "local";
+
+  /**
    * The zone name to use when processing an event task that does not have a zone label configured.
    */
   @NotBlank

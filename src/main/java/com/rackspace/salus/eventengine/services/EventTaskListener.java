@@ -24,7 +24,9 @@ import java.time.Instant;
 import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.PartitionOffset;
 import org.springframework.kafka.annotation.TopicPartition;
 import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -41,6 +43,8 @@ public class EventTaskListener {
   private final AppProperties appProperties;
   private final KafkaTopicProperties kafkaTopicProperties;
   private final EventContextResolver eventContextResolver;
+  private final String appName;
+  private final String ourHostName;
 
   @Autowired
   public EventTaskListener(ThreadPoolTaskScheduler scheduler,
@@ -49,7 +53,9 @@ public class EventTaskListener {
                            EventTaskLoader eventTaskLoader,
                            AppProperties appProperties,
                            KafkaTopicProperties kafkaTopicProperties,
-                           EventContextResolver eventContextResolver) {
+                           EventContextResolver eventContextResolver,
+                           @Value("spring.application.name") String appName,
+                           @Value("${localhost.name}") String ourHostName) {
     this.scheduler = scheduler;
     this.kafkaListenerEndpointRegistry = kafkaListenerEndpointRegistry;
     this.taskRepository = taskRepository;
@@ -57,17 +63,31 @@ public class EventTaskListener {
     this.appProperties = appProperties;
     this.kafkaTopicProperties = kafkaTopicProperties;
     this.eventContextResolver = eventContextResolver;
+    this.appName = appName;
+    this.ourHostName = ourHostName;
   }
 
   public String getTopic() {
     return kafkaTopicProperties.getTaskChanges();
   }
 
+  @SuppressWarnings("unused") // used in SpEL
+  public String getGroupId() {
+    // consume in a "broadcast-manner" so each instance of this application will act
+    // as its own consumer group
+    return String.join("-",
+        appName,
+        appProperties.getEnvironment(),
+        ourHostName);
+  }
+
   @KafkaListener(autoStartup = "false",
-      topicPartitions = @TopicPartition(
-          topic = "#{__listener.topic}",
-          partitions = "#{@partitionFinder.partitions(__listener.topic)}"
-      )
+      properties = {
+          // always start with newest events since init loaded latest from DB
+          "spring.kafka.consumer.auto-offset-reset=latest"
+      },
+      topics = "#{__listener.topic}",
+      groupId = "#{__listener.groupId}"
   )
   public void handleChangeEvent(TaskChangeEvent event) {
     taskRepository.findById(event.getTaskId())
