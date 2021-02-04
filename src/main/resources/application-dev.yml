@@ -1,0 +1,24 @@
+
+spring:
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
+    properties:
+      hibernate:
+        generate_statistics: false
+    show-sql: false
+  datasource:
+    username: dev
+    password: pass
+    url: jdbc:mysql://localhost:3306/default?verifyServerCertificate=false&useSSL=false&requireSSL=false
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    platform: mysql
+  kafka:
+    listener:
+      # this will allow for us to start consumer of a particular topic before the producer
+      missing-topics-fatal: false
+  profiles:
+    include: debug
+salus:
+  event-engine:
+    task-loading-initial-delay: 10s
+    metrics-topic: umf.json
